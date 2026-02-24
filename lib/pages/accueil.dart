@@ -248,20 +248,6 @@ class _AccueilState extends State<Accueil> {
         mainAxisSpacing: 15,
         childAspectRatio: 1.1,
         children: [
-          if (!widget.isGuest)
-            FeatureCard(
-              icon: Icons.map_outlined,
-              title: "Trajet\nSécurisé",
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const TrajetPage())),
-            ),
-          if (!widget.isGuest)
-            FeatureCard(
-              icon: Icons.book_outlined,
-              title: "Journal\nde bord",
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (context) => const JournalPage())),
-            ),
           FeatureCard(
             icon: Icons.contact_phone_outlined,
             title: "Annuaire\nd'aide",
@@ -287,6 +273,20 @@ class _AccueilState extends State<Accueil> {
               title: "Créer un\ncompte",
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (context) => const SignupPage())),
+            ),
+          if (!widget.isGuest)
+            FeatureCard(
+              icon: Icons.map_outlined,
+              title: "Trajet\nSécurisé",
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const TrajetPage())),
+            ),
+          if (!widget.isGuest)
+            FeatureCard(
+              icon: Icons.book_outlined,
+              title: "Journal\nde bord",
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const JournalPage())),
             ),
         ],
       ),
