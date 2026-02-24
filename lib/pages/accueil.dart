@@ -45,7 +45,7 @@ class _AccueilState extends State<Accueil> {
 
       try {
         await SmsService.sendSms(recipients,
-            "Je vais bien, je suis en sécurité. (Message envoyé via safecampus)");
+            "Je vais bien, je suis en sécurité. (Message envoyé via SafeCampus)");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -327,7 +327,7 @@ class _AccueilState extends State<Accueil> {
               elevation: 0,
               automaticallyImplyLeading: false,
               title: Text(
-                "safecampus",
+                "SafeCampus",
                 style: TextStyle(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.bold,

@@ -21,17 +21,22 @@ class TrajetPage extends StatefulWidget {
 }
 
 class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
-  static const int _extensionSeconds = 300; // 5 minutes
+  static const int _extensionSeconds =
+      300; // 5 minutes (à modifier en fct des retour utilisateur)
   bool _isActive = false;
   bool _isFinished = false;
   double _durationMinutes = 15;
   Timer? _timer;
   int _remainingSeconds = 0;
+  List<Map<String, String>> _contacts = [];
+  Set<String> _selectedPhones = {};
+  bool _isLoadingContacts = true;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadContacts();
   }
 
   @override
@@ -44,21 +49,37 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
     }
   }
 
-  // Récupération des contacts de confiance
-  Future<List<String>> _getRecipients() async {
+  Future<void> _loadContacts() async {
     final box = SecureStorageService.contactsBox;
     final user = FirebaseAuth.instance.currentUser;
     final String key = user != null
         ? '${user.uid}_trusted_contacts'
         : 'guest_trusted_contacts';
-    final contacts = box.get(key);
+    final rawContacts = box.get(key);
 
-    if (contacts != null && (contacts as List).isNotEmpty) {
-      return (contacts)
-          .map((e) => (e['phone'] as String).replaceAll(' ', ''))
-          .toList();
+    if (rawContacts != null && (rawContacts as List).isNotEmpty) {
+      final loadedContacts = (rawContacts).map((e) {
+        return {
+          'name': e['name'] as String,
+          'phone': (e['phone'] as String).replaceAll(' ', '')
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _contacts = loadedContacts;
+          _selectedPhones = loadedContacts.map((c) => c['phone']!).toSet();
+          _isLoadingContacts = false;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _contacts = [];
+          _isLoadingContacts = false;
+        });
+      }
     }
-    return [];
   }
 
   void _startJourney() async {
@@ -70,7 +91,7 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
     _startTimer();
 
     // SMS de début de trajet
-    final recipients = await _getRecipients();
+    final recipients = _selectedPhones.toList();
     if (recipients.isNotEmpty) {
       // Pas d'attente du résultat pour ne pas bloquer l'UI
       SmsService.sendSms(recipients,
@@ -115,6 +136,12 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
     int minutes = totalSeconds ~/ 60;
     int seconds = totalSeconds % 60;
     return "${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}";
+  }
+
+  String _getArrivalTime() {
+    final now = DateTime.now();
+    final arrival = now.add(Duration(minutes: _durationMinutes.toInt()));
+    return "${arrival.hour.toString().padLeft(2, '0')}:${arrival.minute.toString().padLeft(2, '0')}";
   }
 
   Future<void> _scheduleNotification() async {
@@ -172,14 +199,14 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
     Vibration.vibrate(pattern: [0, 1000, 500, 1000, 500, 1000]);
 
     // Ouverture directe de l'app SMS
-    final recipients = await _getRecipients();
+    final recipients = _selectedPhones.toList();
     if (recipients.isNotEmpty) {
       await SmsService.sendSms(recipients,
           "ALERTE ! Je n'ai pas confirmé la fin de mon trajet. Je suis peut-être en danger.");
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: const Text("Aucun contact d'urgence configuré."),
+            content: const Text("Aucun contact sélectionné pour l'alerte."),
             backgroundColor: Theme.of(context).colorScheme.error),
       );
     }
@@ -210,14 +237,14 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: _isActive
-            ? _buildActiveView()
-            : _isFinished
-                ? _buildFinishedView()
-                : _buildSetupView(),
-      ),
+      body: _isActive
+          ? Padding(
+              padding: const EdgeInsets.all(20.0), child: _buildActiveView())
+          : _isFinished
+              ? Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: _buildFinishedView())
+              : _buildSetupView(),
     );
   }
 
@@ -270,88 +297,284 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
   Widget _buildSetupView() {
     final theme = Theme.of(context);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "Où allez-vous ?",
-          style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface),
-        ),
-        const SizedBox(height: 20),
-        // Placeholder Carte (TODO intégration Google Maps)
-        Container(
-          height: 200,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: theme.cardTheme.color,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          child: Center(
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.map,
-                    size: 50, color: theme.colorScheme.onSurfaceVariant),
+                // Header
+                Center(
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.2),
+                          blurRadius: 30,
+                          spreadRadius: 10,
+                        )
+                      ],
+                    ),
+                    child: Icon(Icons.security,
+                        size: 50, color: theme.colorScheme.primary),
+                  ),
+                ),
+                const SizedBox(height: 15),
+                Center(
+                  child: Text(
+                    "Mode sécurisé prêt",
+                    style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16),
+                  ),
+                ),
+                const SizedBox(height: 30),
+
+                // Bloc heure d'arrivee
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withOpacity(0.2)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildTimeInfo(theme, "Départ", "Maintenant"),
+                      Icon(Icons.arrow_forward,
+                          color: theme.colorScheme.onSurfaceVariant),
+                      _buildTimeInfo(
+                          theme, "Arrivée estimée", _getArrivalTime()),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+
+                // Durée centrale
+                Column(
+                  children: [
+                    Text(
+                      "${_durationMinutes.toInt()} min",
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    Text(
+                      "Durée estimée du trajet",
+                      style:
+                          TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 10),
+                    Slider(
+                      value: _durationMinutes,
+                      min: 5,
+                      max: 120,
+                      divisions: 23,
+                      activeColor: theme.colorScheme.primary,
+                      inactiveColor:
+                          theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                      onChanged: (value) {
+                        setState(() {
+                          _durationMinutes = value;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 30),
+
+                // Bloc "Ce qui va se passer"
+                Text(
+                  "Ce qui va se passer",
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface),
+                ),
                 const SizedBox(height: 10),
-                Text("Aperçu de la carte",
-                    style:
-                        TextStyle(color: theme.colorScheme.onSurfaceVariant)),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color,
+                    borderRadius: BorderRadius.circular(15),
+                    border: Border.all(
+                        color: theme.colorScheme.onSurfaceVariant
+                            .withOpacity(0.2)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildInfoRow(theme, Icons.sms_outlined,
+                          "Vos contacts seront informés du départ"),
+                      const SizedBox(height: 15),
+                      _buildInfoRow(theme, Icons.timer_outlined,
+                          "Une confirmation vous sera demandée à l'arrivée"),
+                      const SizedBox(height: 15),
+                      _buildInfoRow(theme, Icons.warning_amber_rounded,
+                          "En cas d'absence de réponse, une alerte sera préparée"),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+
+                // Bloc Contacts
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Contacts concernés",
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                if (_isLoadingContacts)
+                  const Center(child: CircularProgressIndicator())
+                else if (_contacts.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline,
+                            color: theme.colorScheme.error),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            "Aucun contact configuré. L'alerte ne pourra pas être envoyée.",
+                            style: TextStyle(color: theme.colorScheme.error),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Wrap(
+                    spacing: 8,
+                    children: _contacts.map((contact) {
+                      final isSelected =
+                          _selectedPhones.contains(contact['phone']);
+                      return FilterChip(
+                        label: Text(contact['name']!),
+                        selected: isSelected,
+                        onSelected: (bool selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedPhones.add(contact['phone']!);
+                            } else {
+                              _selectedPhones.remove(contact['phone']!);
+                            }
+                          });
+                        },
+                        selectedColor:
+                            theme.colorScheme.primary.withOpacity(0.2),
+                        checkmarkColor: theme.colorScheme.primary,
+                        labelStyle: TextStyle(
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.onSurface,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
         ),
-        const SizedBox(height: 30),
-        Text(
-          "Durée estimée",
-          style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text("${_durationMinutes.toInt()} min",
-                style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary)),
-            Expanded(
-              child: Slider(
-                value: _durationMinutes,
-                min: 1,
-                max: 60,
-                divisions: 11,
-                activeColor: theme.colorScheme.primary,
-                inactiveColor: theme.colorScheme.onSurfaceVariant,
-                onChanged: (value) {
-                  setState(() {
-                    _durationMinutes = value;
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
-        const Spacer(),
-        SizedBox(
-          width: double.infinity,
-          height: 55,
-          child: ElevatedButton(
-            onPressed: _startJourney,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15)),
-            ),
-            child: const Text("Commencer le trajet",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+
+        // Bouton Sticky en bas
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: theme.scaffoldBackgroundColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                offset: const Offset(0, -4),
+                blurRadius: 10,
+              )
+            ],
           ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: _startJourney,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 5,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15)),
+                  ),
+                  child: const Text("Commencer le trajet sécurisé",
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 15),
+              Text(
+                "Aucune donnée de localisation n'est stockée.\nLa position n'est partagée qu'en cas d'alerte.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeInfo(ThemeData theme, String label, String time) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 4),
+        Text(time,
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface)),
+      ],
+    );
+  }
+
+  Widget _buildInfoRow(ThemeData theme, IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: theme.colorScheme.primary),
+        const SizedBox(width: 15),
+        Expanded(
+          child: Text(text,
+              style:
+                  TextStyle(fontSize: 14, color: theme.colorScheme.onSurface)),
         ),
       ],
     );
