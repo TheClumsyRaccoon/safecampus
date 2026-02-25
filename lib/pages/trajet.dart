@@ -20,7 +20,8 @@ class TrajetPage extends StatefulWidget {
   State<TrajetPage> createState() => _TrajetPageState();
 }
 
-class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
+class _TrajetPageState extends State<TrajetPage>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   static const int _extensionSeconds =
       300; // 5 minutes (à modifier en fct des retour utilisateur)
   bool _isActive = false;
@@ -31,12 +32,22 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
   List<Map<String, String>> _contacts = [];
   Set<String> _selectedPhones = {};
   bool _isLoadingContacts = true;
+  late AnimationController _controleurHalo;
+  late Animation<double> _animationHalo;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadContacts();
+
+    // Animation du header
+    _controleurHalo = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _animationHalo =
+        CurvedAnimation(parent: _controleurHalo, curve: Curves.easeInOut);
   }
 
   @override
@@ -216,6 +227,7 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
+    _controleurHalo.dispose();
     super.dispose();
   }
 
@@ -306,20 +318,26 @@ class _TrajetPageState extends State<TrajetPage> with WidgetsBindingObserver {
               children: [
                 // Header
                 Center(
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: theme.colorScheme.primary.withOpacity(0.1),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withOpacity(0.2),
-                          blurRadius: 30,
-                          spreadRadius: 10,
-                        )
-                      ],
-                    ),
+                  child: AnimatedBuilder(
+                    animation: _animationHalo,
+                    builder: (context, child) {
+                      return Container(
+                        width: 100,
+                        height: 100,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.2),
+                              blurRadius: 20 + (15 * _animationHalo.value),
+                              spreadRadius: 5 + (10 * _animationHalo.value),
+                            )
+                          ],
+                        ),
+                        child: child,
+                      );
+                    },
                     child: Icon(Icons.security,
                         size: 50, color: theme.colorScheme.primary),
                   ),
