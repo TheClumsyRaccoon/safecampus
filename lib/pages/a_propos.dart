@@ -54,7 +54,7 @@ class AProposPage extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              "2026 safecampus par TheClumsyRaccoon",
+              "2026 SafeCampus par TheClumsyRaccoon",
               style: TextStyle(
                   color: theme.colorScheme.onSurfaceVariant, fontSize: 12),
             ),
