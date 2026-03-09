@@ -6,6 +6,7 @@ SafeCampus est une application mobile de sécurité personnelle, privacy first e
 <p align="center">
 <img width="760" height="1280" alt="safecampus_mars" src="https://github.com/user-attachments/assets/2bf36e2e-da7a-40ae-bd8d-67f4d3d0bc59" />
 </p>
+
 ---
 
 ## Architecture
