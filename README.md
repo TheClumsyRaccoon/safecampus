@@ -59,6 +59,29 @@ lib/
 
 ---
 
+## Tech Stack
+
+| Domaine | Technologie |
+|---|---|
+| Framework | Flutter (Dart) |
+| Authentification | Firebase Auth — email, Google, Apple |
+| Base de données cloud | Cloud Firestore |
+| Stockage local chiffré | Hive + Flutter Secure Storage (AES-256) |
+| Notifications locales | Flutter Local Notifications |
+| Géolocalisation | Geolocator |
+| SMS | URL Launcher (délégation à l'application SMS native) |
+
+---
+
+## Prérequis
+
+- Flutter SDK 3.x ou supérieur
+- Un projet Firebase avec Authentication et Firestore activés
+- Le fichier `google-services.json` placé dans `android/app/`
+- Pour la connexion Apple : bundle ID configuré et capability Sign In with Apple activée dans Xcode
+
+---
+
 ## Installation
 
 ```bash
