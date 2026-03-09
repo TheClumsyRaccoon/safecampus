@@ -7,4 +7,21 @@ NB1 : Le premier commit comportait un projet déjà bien rempli car ça fait 2 p
 
 ---
 
+## Installation
+
+```bash
+git clone https://github.com/TheClumsyRaccoon/safecampus.git
+cd safecampus
+flutter pub get
+flutter run
+```
+
+Le fichier `firebase_options.dart` doit être présent avant le premier lancement. Il est généré via la CLI Firebase :
+
+```bash
+flutterfire configure
+```
+
+---
+
 Développée par TheClumsyRaccoon.
