@@ -18,7 +18,7 @@ lib/
 │   ├── alerte.dart                  # Bouton SOS
 │   ├── annuaire.dart                # Annuaire d'urgence
 │   ├── connexion.dart               # Authentification
-│   ├── contacts.dart                # Gestion des contacts de confiances
+│   ├── contacts.dart                # Gestion des contacts de confiance
 │   ├── faux_appel.dart              # Simulation d'appel entrant
 │   ├── groupe_detail.dart           # Détail d'un groupe de trajet
 │   ├── groupes.dart                 # Liste des groupes
