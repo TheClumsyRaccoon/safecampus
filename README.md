@@ -14,9 +14,11 @@ lib/
 ├── main.dart                        # Point d'entrée, init, routage
 │
 ├── pages/
+│   ├── a_propos.dart                # Page d'Infos
 │   ├── accueil.dart                 # Tableau de bord principal
 │   ├── alerte.dart                  # Bouton SOS
 │   ├── annuaire.dart                # Annuaire d'urgence
+│   ├── confidentialite.dart         # Politique de confidentialité   
 │   ├── connexion.dart               # Authentification
 │   ├── contacts.dart                # Gestion des contacts de confiance
 │   ├── faux_appel.dart              # Simulation d'appel entrant
