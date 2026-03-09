@@ -1,9 +1,9 @@
 # SafeCampus
+## Prévenir, Rassurer et Informer
 
-SafeCampus est une application mobile de sécurité personnelle développée en flutter, destinée aux étudiants, pour lutter contre l'insécurité et les VSS.
+SafeCampus est une application mobile de sécurité personnelle, privacy first et open source, conçue pour lutter contre les Violences Sexistes et Sexuelles (VSS) en milieu étudiant.
 
-NB : Le projet est un WIP, tout est susceptible de changer.  
-NB1 : Le premier commit comportait un projet déjà bien rempli car ça fait 2 petites semaines que je travaille dessus (et que l'idée de rendre SafeCampus open source ne m'a été suggéré il n'y a que quelques jours).
+<img width="760" height="1280" alt="safecampus_mars" src="https://github.com/user-attachments/assets/2bf36e2e-da7a-40ae-bd8d-67f4d3d0bc59" />
 
 ---
 
@@ -64,7 +64,7 @@ lib/
 | Domaine | Technologie |
 |---|---|
 | Framework | Flutter (Dart) |
-| Authentification | Firebase Auth — email, Google, Apple |
+| Authentification | Firebase Auth — email, Google |
 | Base de données cloud | Cloud Firestore |
 | Stockage local chiffré | Hive + Flutter Secure Storage (AES-256) |
 | Notifications locales | Flutter Local Notifications |
@@ -78,7 +78,6 @@ lib/
 - Flutter SDK 3.x ou supérieur
 - Un projet Firebase avec Authentication et Firestore activés
 - Le fichier `google-services.json` placé dans `android/app/`
-- Pour la connexion Apple : bundle ID configuré et capability Sign In with Apple activée dans Xcode
 
 ---
 
